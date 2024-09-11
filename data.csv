@@ -1,0 +1,3 @@
+id,component,total_qty,defective,remaining_qty,image_path,issued_users
+0,arduino nano,21,0,14,images/arduino_nano.jpg,"2023BCS081(2),2022bec057(1),2022bec057(3),2022bcs042(3),2022bcs135(10),"
+1,arduino uno,122,0,121,images/arduino_uno.png,"2022bec057(2),"
