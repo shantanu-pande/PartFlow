@@ -1,0 +1,6 @@
+{
+    "users_file": "users.csv",
+    "components_file": "components.csv",
+    "issuers_file": "issuers.csv",
+    "images_path": "images/"
+}

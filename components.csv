@@ -1,0 +1,4 @@
+id,component,total_qty,defective,remaining_qty,image_path
+0,arduino nano,21,0,14,arduino_nano.jpg
+1,arduino uno,122,13,127,arduino_uno.png
+2,resistor,40,0,0,resistor.png
