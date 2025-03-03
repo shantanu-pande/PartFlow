@@ -76,15 +76,76 @@ class ComponentManagementSystem:
                 self.add_component_page()
      
     def issue_component_page(self):
-        pass
+        st.title("Issue Component")
+        userId = st.text_input("User ID")
+        component_name = st.text_input("Component Name")
+        quantity = st.number_input("Quantity", min_value=1, value=1)
+        if st.button("Issue"):
+            data = {
+                "action": "issueComponent",
+                "data": {
+                    "userId": userId,
+                    "component_name": component_name,
+                    "quantity": quantity
+                }
+            }
+            response = requests.post(WEB_APP_URL, json=data)
+            if response.json().get("success"):
+                st.success("Component issued successfully!")
+            else:
+                st.error("Failed to issue component!")
+
 
     def return_component_page(self):
-        pass
+        st.title("Return Component")
+        userId = st.text_input("User ID")
+        if st.button("Search"):
+            data = {
+                "action": "getUserEnquiry",
+                "data": {
+                    "userId": userId
+                }
+            }
+            response = requests.post(WEB_APP_URL, json=data)
+            if response.json().get("success"):
+                data = response.json().get("data")
+                component_name = st.selectbox("Component Name", data["Currently_Issued"])
+                quantity = st.number_input("Quantity", min_value=1, value=1)
+                if st.button("Return"):
+                    data = {
+                        "action": "returnComponent",
+                        "data": {
+                            "userId": userId,
+                            "component_name": component_name,
+                            "quantity": quantity
+                        }
+                    }
+                    response = requests.post(WEB_APP_URL, json=data)
+                    if response.json().get("success"):
+                        st.success("Component returned successfully!")
+                    else:
+                        st.error("Failed to return component!") 
+            else:
+                st.error("User not found!")
 
     def user_enquiry_page(self):
-        pass
+        st.title("User Enquiry")
+        userId = st.text_input("User ID")
+        if st.button("Search"):
+            data = {
+                "action": "getUserEnquiry",
+                "data": {
+                    "userId": userId
+                }
+            }
+            response = requests.post(WEB_APP_URL, json=data)
+            if response.json().get("success"):
+                st.write(response.json().get("data"))
+            else:
+                st.error("User not found!")
 
     def add_component_page(self):
+        st.title("Add Component")
         component_name = st.text_input("Component Name")
         quantity = st.number_input("Quantity", min_value=1, value=1)
         component_image_link = st.text_input("Component Image Link")
@@ -106,29 +167,24 @@ class ComponentManagementSystem:
                 st.error("Failed to add component!")
 
     def components_list_page(self):
-        # st.title("Components List")
-        # self.component_text_search = st.text_input("Search Component", value="").strip().lower()
-        # data = self.components_list(self.component_text_search)
-        # print(data)
-        # st.code(data)
-        # m1 = self.df["component"].str.contains(self.component_text_search)
-        # m2 = self.df["image_path"].str.contains(self.component_text_search)
-        # df_search = self.df[m1 | m2]
+        st.title("Search Components")
+        component_name = st.text_input("Component Name")
+        if st.button("Search"):
+            data = {
+                "action": "getComponent",
+                "data": {
+                    "component_name": component_name
+                }
+            }
+            response = requests.post(WEB_APP_URL, json=data)
+            if response.json().get("success"):
+                st.write(response.json().get("data"))
+                # Logic remaining here !!!#
+                # ##################################
 
-        # N_cards_per_row = 3
-        # if self.component_text_search:  
-        #     for n_row, row in df_search.reset_index().iterrows():
-        #         i = n_row%N_cards_per_row
-        #         if i==0:
-        #             st.write("---")
-        #             cols = st.columns(N_cards_per_row, gap="large")
-        #         # draw the card
-        #         with cols[n_row%N_cards_per_row]:
-        #             img = Image.open(row['image_path'])
-        #             st.image(img, use_column_width=True, width=100)
-        #             st.code(f"{row['component'].strip()}", language='html')
-        #             st.markdown(f"Remaining Qty: **{row['remaining_qty']}**")
-        #             st.markdown(f"Total: *{row['total_qty']}*")
+                ##############################
+            else:
+                st.error("Component not found!")
         pass
 
     def add_user_page(self):
@@ -148,13 +204,6 @@ class ComponentManagementSystem:
             else:
                 st.error("All fields are required!")
 
-    def get_components_list(self, querie):
-        data = {
-            "action": "getComponentsList",
-            "querie": querie
-        }
-        response = requests.post(WEB_APP_URL, json=data)
-        return response.json()
 
     def validate_credentials(self, username, password):
         data = {
