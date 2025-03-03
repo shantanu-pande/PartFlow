@@ -1,25 +1,3 @@
-# import streamlit as st
-
-
-
-# # Streamlit Interface for User Creation
-# st.title("Create New User")
-# user_id = st.text_input("User ID")
-# name = st.text_input("Name")
-# password = st.text_input("Password", type="password")
-# role = st.selectbox("Role", ["Manager", "Admin", "User"])
-
-# if st.button("Create User"):
-#     if user_id and name and password:
-#         result = create_user(user_id, name, password, role)
-#         if result.get("success"):
-#             st.success(result["message"])
-#         else:
-#             st.error("Failed to create user!")
-#     else:
-#         st.error("All fields are required!")
-
-
 
 import streamlit as st
 from streamlit_option_menu import option_menu
@@ -29,6 +7,8 @@ import bcrypt
 import requests
 
 WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxnFXCqYbbSfFZjT2wOUe2v9innSydVQC5Ekv7OP2nADWvvgcuyMpSr--luVUNeQGMU3g/exec"
+# WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzMVuIUkRuYtBoVu8iXy4OUXsa8iPeuccSrTP8bl9Cs/dev"
+
 
 class ComponentManagementSystem:
     def __init__(self):
@@ -37,9 +17,9 @@ class ComponentManagementSystem:
         self.pageTitle = "Component Management System"
         self.hide_decoration_bar_style = '''<style>header {visibility: hidden;}</style>'''
         self.menu_title = "Menu"
-        self.admin_menu_options = ["Components List", 'Issue Component', "Return Component", "User Enqury",'Add Component', 'Add User']
+        self.admin_menu_options = ["Components List", 'Issue Component', "Return Component", "User Enquiry",'Add Component', 'Add User']
         self.admin_menu_icons = ['list-task', 'pencil-square', 'arrow-clockwise', 'person-lines-fill','plus-circle-fill', 'person-plus-fill']
-        self.user_menu_options = ["Components List", 'Issue Component', "User Enqury"]
+        self.user_menu_options = ["Components List", 'Issue Component', "User Enquiry"]
         self.user_menu_icons = ['list-task', 'pencil-square', 'person-lines-fill']
         st.set_page_config(page_title=self.pageTitle, page_icon=self.pageIcon)
         st.markdown(self.hide_decoration_bar_style, unsafe_allow_html=True)
@@ -50,36 +30,112 @@ class ComponentManagementSystem:
             st.session_state['role'] = None
             
         if not st.session_state['logged_in'] or st.session_state['role'] == None:
-            self.show_login_form()
+            # show_login_form
+            st.title("Login")
+            with st.form("login_form"):
+                username = st.text_input("User ID")
+                password = st.text_input("Password", type="password") 
+                
+                # Submit button inside form
+                if st.form_submit_button("Login"):
+                    data = self.validate_credentials(username, password)
+                    if data.get("success"):
+                        st.session_state['logged_in'] = True
+                        st.session_state['role'] = data.get("role")
+                        st.success(f"Login as {data.get('role')}")
+                    else:
+                        st.error("Invalid credentials")
         else:
-            self.after_login_render()
+            #after_login_render
+            with st.sidebar:
+                st.image("logo.png", width=280)
+                if st.session_state['role'] == "Admin":
+                    self.selected_menu = option_menu(
+                        menu_title=self.menu_title,
+                        options=self.admin_menu_options,
+                        icons=self.admin_menu_icons
+                    )
+                if st.session_state['role'] == "User":
+                    self.selected_menu = option_menu(
+                        menu_title=self.menu_title,
+                        options=self.user_menu_options,
+                        icons=self.user_menu_icons
+                    )
 
-    def show_login_form(self):
-        st.title("Login")
-        with st.form("login_form"):
-            username = st.text_input("User ID")
-            password = st.text_input("Password", type="password") 
-            
-            # Submit button inside form
-            if st.form_submit_button("Login"):
-                data = self.validate_credentials(username, password)
-                if data.get("success"):
-                    st.session_state['logged_in'] = True
-                    st.session_state['role'] = data.get("role")
-                    st.success(f"Login as {data.get('role')}")
+            if self.selected_menu == "Add User":
+                self.add_user_page()
+            elif self.selected_menu == "Components List":
+                self.components_list_page()
+            elif self.selected_menu == "Issue Component":
+                self.issue_component_page()
+            elif self.selected_menu == "Return Component":
+                self.return_component_page()
+            elif self.selected_menu == "User Enquiry":
+                self.user_enquiry_page()
+            elif self.selected_menu == "Add Component":
+                self.add_component_page()
+     
+    def issue_component_page(self):
+        pass
+
+    def return_component_page(self):
+        pass
+
+    def user_enquiry_page(self):
+        pass
+
+    def add_component_page(self):
+        pass
+
+    def components_list_page(self):
+        st.title("Components List")
+        self.component_text_search = st.text_input("Search Component", value="").strip().lower()
+        data = self.components_list(self.component_text_search)
+        print(data)
+        st.code(data)
+        # m1 = self.df["component"].str.contains(self.component_text_search)
+        # m2 = self.df["image_path"].str.contains(self.component_text_search)
+        # df_search = self.df[m1 | m2]
+
+        # N_cards_per_row = 3
+        # if self.component_text_search:  
+        #     for n_row, row in df_search.reset_index().iterrows():
+        #         i = n_row%N_cards_per_row
+        #         if i==0:
+        #             st.write("---")
+        #             cols = st.columns(N_cards_per_row, gap="large")
+        #         # draw the card
+        #         with cols[n_row%N_cards_per_row]:
+        #             img = Image.open(row['image_path'])
+        #             st.image(img, use_column_width=True, width=100)
+        #             st.code(f"{row['component'].strip()}", language='html')
+        #             st.markdown(f"Remaining Qty: **{row['remaining_qty']}**")
+        #             st.markdown(f"Total: *{row['total_qty']}*")
+
+    def add_user_page(self):
+        st.title("Create New User")
+        user_id = st.text_input("User ID")
+        name = st.text_input("Name")
+        password = st.text_input("Password", type="password")
+        role = st.selectbox("Role", ["Admin", "User"])
+
+        if st.button("Create User"):
+            if user_id and name and password:
+                result = self.create_user(user_id, name, password, role)
+                if result.get("success"):
+                    st.success(result["message"])
                 else:
-                    st.error("Invalid credentials")
+                    st.error("Failed to create user!")
+            else:
+                st.error("All fields are required!")
 
-
-    def after_login_render(self):
-        with st.sidebar:
-            st.image("logo.png", width=270)
-            if st.session_state['role'] == "Admin":
-                self.selected_menu = option_menu(
-                    menu_title=self.adminmenu_title,
-                    options=self.menu_options,
-                    icons=self.menu_icons
-                )
+    def get_components_list(self, querie):
+        data = {
+            "action": "getComponentsList",
+            "querie": querie
+        }
+        response = requests.post(WEB_APP_URL, json=data)
+        return response.json()
 
     def validate_credentials(self, username, password):
         data = {
@@ -90,7 +146,7 @@ class ComponentManagementSystem:
             }
         }
         response = requests.post(WEB_APP_URL, json=data)
-        print(response.json())
+        # print(response.json())
         return response.json()
     
     def create_user(self, user_id, name, password, role):
@@ -104,7 +160,8 @@ class ComponentManagementSystem:
             }
         }
         response = requests.post(WEB_APP_URL, json=data)
-        return response.json()
+        print(response)
+        return response.json()  
 
 
 if __name__ == '__main__':
