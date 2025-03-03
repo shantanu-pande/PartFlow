@@ -85,14 +85,32 @@ class ComponentManagementSystem:
         pass
 
     def add_component_page(self):
-        pass
+        component_name = st.text_input("Component Name")
+        quantity = st.number_input("Quantity", min_value=1, value=1)
+        component_image_link = st.text_input("Component Image Link")
+        component_description = st.text_area("Component Description")
+        if st.button("Add Component"):
+            data = {
+                "action": "addComponent",
+                "data": {
+                    "component_name": component_name,
+                    "quantity": quantity,
+                    "component_image_link": component_image_link,
+                    "component_description": component_description
+                }
+            }
+            response = requests.post(WEB_APP_URL, json=data)
+            if response.json().get("success"):
+                st.success("Component added successfully!")
+            else:
+                st.error("Failed to add component!")
 
     def components_list_page(self):
-        st.title("Components List")
-        self.component_text_search = st.text_input("Search Component", value="").strip().lower()
-        data = self.components_list(self.component_text_search)
-        print(data)
-        st.code(data)
+        # st.title("Components List")
+        # self.component_text_search = st.text_input("Search Component", value="").strip().lower()
+        # data = self.components_list(self.component_text_search)
+        # print(data)
+        # st.code(data)
         # m1 = self.df["component"].str.contains(self.component_text_search)
         # m2 = self.df["image_path"].str.contains(self.component_text_search)
         # df_search = self.df[m1 | m2]
@@ -111,6 +129,7 @@ class ComponentManagementSystem:
         #             st.code(f"{row['component'].strip()}", language='html')
         #             st.markdown(f"Remaining Qty: **{row['remaining_qty']}**")
         #             st.markdown(f"Total: *{row['total_qty']}*")
+        pass
 
     def add_user_page(self):
         st.title("Create New User")
