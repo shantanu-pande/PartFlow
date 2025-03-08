@@ -1,13 +1,11 @@
-
 import streamlit as st
 from streamlit_option_menu import option_menu
-import pandas as pd
 from PIL import Image
-import bcrypt
 import requests
+from io import BytesIO
+import json
 
 WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxnFXCqYbbSfFZjT2wOUe2v9innSydVQC5Ekv7OP2nADWvvgcuyMpSr--luVUNeQGMU3g/exec"
-# WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzMVuIUkRuYtBoVu8iXy4OUXsa8iPeuccSrTP8bl9Cs/dev"
 
 
 class ComponentManagementSystem:
@@ -48,7 +46,7 @@ class ComponentManagementSystem:
         else:
             #after_login_render
             with st.sidebar:
-                st.image("logo.png", width=280)
+                st.image("logo.png", width=260)
                 if st.session_state['role'] == "Admin":
                     self.selected_menu = option_menu(
                         menu_title=self.menu_title,
@@ -78,14 +76,14 @@ class ComponentManagementSystem:
     def issue_component_page(self):
         st.title("Issue Component")
         userId = st.text_input("User ID")
-        component_name = st.text_input("Component Name")
+        componentId = st.text_input("Component ID")
         quantity = st.number_input("Quantity", min_value=1, value=1)
         if st.button("Issue"):
             data = {
                 "action": "issueComponent",
                 "data": {
-                    "userId": userId,
-                    "component_name": component_name,
+                    "user_id": userId,
+                    "component_id": componentId,
                     "quantity": quantity
                 }
             }
@@ -99,50 +97,89 @@ class ComponentManagementSystem:
     def return_component_page(self):
         st.title("Return Component")
         userId = st.text_input("User ID")
-        if st.button("Search"):
+
+        if 'components' not in st.session_state:
+            st.session_state['components'] = []
+
+        if st.button("Fetch Components"):
             data = {
-                "action": "getUserEnquiry",
+                "action": "getIssuedComponents",
                 "data": {
-                    "userId": userId
+                    "user_id": userId
                 }
             }
             response = requests.post(WEB_APP_URL, json=data)
             if response.json().get("success"):
-                data = response.json().get("data")
-                component_name = st.selectbox("Component Name", data["Currently_Issued"])
-                quantity = st.number_input("Quantity", min_value=1, value=1)
-                if st.button("Return"):
-                    data = {
-                        "action": "returnComponent",
-                        "data": {
-                            "userId": userId,
-                            "component_name": component_name,
-                            "quantity": quantity
-                        }
-                    }
-                    response = requests.post(WEB_APP_URL, json=data)
-                    if response.json().get("success"):
-                        st.success("Component returned successfully!")
-                    else:
-                        st.error("Failed to return component!") 
+                st.session_state['components'] = response.json().get("data")
             else:
-                st.error("User not found!")
+                st.error("Failed to fetch components!")
+                return
+
+        components = st.session_state['components']
+        for i in range(0, len(components), 3):
+            cols = st.columns(3)
+            for j, col in enumerate(cols):
+                if i + j >= len(components):
+                    break
+                row = components[i + j]
+                with col:
+                    with st.expander(f"Component: {row['component_name'].strip()}"):
+                        # img = Image.open(BytesIO(requests.get(row['image_path']).content))
+                        # st.image(img, use_column_width=True, width=100)
+                        st.markdown(f"**ID:** {row['component_id']}")
+                        st.markdown(f"**Quantity Issued:** {row['quantity']}")
+                        quantity_r = st.number_input(f"Return Quantity ({row['component_name']})", min_value=0, max_value=row['quantity'], value=0, key=f"r_quantity_{row['component_id']}")
+                        quantity_d = st.number_input(f"Return Quantity ({row['component_name']})", min_value=0, max_value=row['quantity'], value=0, key=f"d_quantity_{row['component_id']}")
+                        if st.button(f"Return {row['component_name']}", key=f"return_{row['component_id']}"):
+                            return_data = {
+                                "action": "returnComponent",
+                                "data": {
+                                    "user_id": userId,
+                                    "component_id": row['component_id'],
+                                    "return_quantity": quantity_r,
+                                    "damaged_quantity": quantity_d
+                                }
+                            }
+                            return_response = requests.post(WEB_APP_URL, json=return_data)
+                            if return_response.json().get("success"):
+                                st.success(f"Component {row['component_name']} returned successfully!")
+                            else:
+                                st.error(f"Failed to return component {row['component_name']}!")
+
 
     def user_enquiry_page(self):
         st.title("User Enquiry")
         userId = st.text_input("User ID")
-        if st.button("Search"):
+
+        if 'components' not in st.session_state:
+            st.session_state['components'] = []
+
+        if st.button("Fetch Components"):
             data = {
-                "action": "getUserEnquiry",
+                "action": "getIssuedComponents",
                 "data": {
-                    "userId": userId
+                    "user_id": userId
                 }
             }
             response = requests.post(WEB_APP_URL, json=data)
             if response.json().get("success"):
-                st.write(response.json().get("data"))
+                st.session_state['components'] = response.json().get("data")
             else:
-                st.error("User not found!")
+                st.error("Failed to fetch components!")
+                return
+
+        components = st.session_state['components']
+        for i in range(0, len(components), 3):
+            cols = st.columns(3)
+            for j, col in enumerate(cols):
+                if i + j >= len(components):
+                    break
+                row = components[i + j]
+                with col:
+                    with st.expander(f"Component: {row['component_name'].strip()}"):
+                        st.markdown(f"**ID:** {row['component_id']}")
+                        st.markdown(f"**Quantity Issued:** {row['quantity']}")
+                        
 
     def add_component_page(self):
         st.title("Add Component")
@@ -171,18 +208,25 @@ class ComponentManagementSystem:
         component_name = st.text_input("Component Name")
         if st.button("Search"):
             data = {
-                "action": "getComponent",
+                "action": "getComponentsList",
                 "data": {
-                    "component_name": component_name
+                    "querie": component_name
                 }
             }
             response = requests.post(WEB_APP_URL, json=data)
             if response.json().get("success"):
-                st.write(response.json().get("data"))
-                # Logic remaining here !!!#
-                # ##################################
-
-                ##############################
+                components = json.loads(response.json().get("data"))
+                for i in range(0, len(components), 3):
+                    cols = st.columns(3)
+                    for j, col in enumerate(cols):
+                        if i + j < len(components):
+                            row = components[i + j]
+                            with col:
+                                with st.expander(f"**Component: {row[1].strip()}**"):
+                                    img = Image.open(BytesIO(requests.get(row[2]).content))
+                                    st.image(img, use_column_width=True, width=100)
+                                    st.markdown(f"**ID:** {row[0]}")
+                                    st.markdown(f"**Description:** {row[3]}")
             else:
                 st.error("Component not found!")
         pass
@@ -191,12 +235,14 @@ class ComponentManagementSystem:
         st.title("Create New User")
         user_id = st.text_input("User ID")
         name = st.text_input("Name")
+        email = st.text_input("Email")
+        contact = st.number_input("Contact Number", min_value=0, step=1, format="%d")
         password = st.text_input("Password", type="password")
         role = st.selectbox("Role", ["Admin", "User"])
 
         if st.button("Create User"):
             if user_id and name and password:
-                result = self.create_user(user_id, name, password, role)
+                result = self.create_user(user_id, name, password, role, email, contact)
                 if result.get("success"):
                     st.success(result["message"])
                 else:
@@ -217,14 +263,17 @@ class ComponentManagementSystem:
         # print(response.json())
         return response.json()
     
-    def create_user(self, user_id, name, password, role):
+    def create_user(self, user_id, name, password, role, email, contact):
         data = {
             "action": "createUser",
             "data": {
                 "userId": user_id,
                 "name": name,
                 "password": password,
-                "role": role
+                "role": role,
+                "email": email,
+                "contact": contact,
+                "currently_issued": []
             }
         }
         response = requests.post(WEB_APP_URL, json=data)
